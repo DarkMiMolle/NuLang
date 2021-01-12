@@ -1,0 +1,27 @@
+version: v1.0
+name: Go
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu1804
+blocks:
+  - name: Warm Cache Dependencies
+    task:
+      jobs:
+        - name: Install dependencies
+          commands:
+            - 'cache restore deps-$SEMAPHORE_GIT_BRANCH-$(checksum Gopkg.lock),deps-$SEMAPHORE_GIT_BRANCH,deps-master'
+            - dep ensure -v
+            - cache store deps-$SEMAPHORE_GIT_BRANCH-$(checksum Gopkg.lock) vendor
+  - name: Linters
+    task:
+      jobs:
+        - name: Vet & Lint
+          commands:
+            - golangci-lint run --deadline 2m0s --skip-dirs=vendor/*
+  - name: Test
+    task:
+      jobs:
+        - name: Test Nu Packages
+          commands:
+            - go test -v -race ./...
